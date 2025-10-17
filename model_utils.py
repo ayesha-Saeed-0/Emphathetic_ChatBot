@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import gdown
 import os  # new
+from huggingface_hub import hf_hub_download
 
 # === Model Components (same as training) ===
 class PositionalEncoding(nn.Module):
@@ -146,27 +147,27 @@ def make_tgt_mask(tgt, pad_idx):
     return pad_mask & (~subsequent_mask.unsqueeze(0))
 
 def load_model(model_path, vocab_path, device):
-    # If model file not local yet, download from Drive
+    
     if not os.path.exists(model_path):
-        # Google Drive file ID parsed from your share link
-        # link: https://drive.google.com/file/d/17iK4WWzl36iefp9om3fnYRxHxum4mlP-/view?usp=drive_link
-        file_id = "17iK4WWzl36iefp9om3fnYRxHxum4mlP-"
-        url = f"https://drive.google.com/uc?id={file_id}"
-        print(f"Downloading model from Drive: {url} → {model_path}")
-        gdown.download(url, model_path, quiet=False)
+        print("Downloading model from Hugging Face Hub...")
+        model_path = hf_hub_download(
+            repo_id="asherrer/empathetic-transformer",  # ✅ your repo
+            filename="transformer_best.pt"              # ✅ your uploaded file name
+        )
 
     # Load vocab
-    with open(vocab_path, 'r') as f:
+    with open(vocab_path, "r") as f:
         vocab = json.load(f)
-    stoi = vocab['stoi']
-    itos = vocab['itos']
-    pad_idx = stoi['<pad>']
+    stoi = vocab["stoi"]
+    itos = vocab["itos"]
+    pad_idx = stoi["<pad>"]
 
-    # Load checkpoint
+    # Load model checkpoint
     checkpoint = torch.load(model_path, map_location=device)
     model = TransformerSeq2Seq(len(itos), pad_idx)
-    model.load_state_dict(checkpoint['model_state'])
+    model.load_state_dict(checkpoint["model_state"])
     model.to(device).eval()
+
     return model, stoi, itos
 
 def encode_text(text, stoi, max_len=128):

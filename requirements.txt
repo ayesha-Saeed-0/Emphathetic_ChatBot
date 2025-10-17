@@ -3,3 +3,4 @@ torch
 sacrebleu
 rouge-score
 gdown
+huggingface_hub
